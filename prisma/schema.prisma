@@ -1,0 +1,360 @@
+// RepsFinder - Complete Prisma Schema
+// Database: SQLite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ==========================================
+// USER MANAGEMENT
+// ==========================================
+
+model User {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  username          String   @unique
+  password          String
+  profileImage      String?
+  isVerified        Boolean  @default(false)
+  notificationToken String?
+  lastLogin         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  orders            Order[]
+  linkValidations   LinkValidation[]
+  affiliateClicks   AffiliateClick[]
+  notifications     Notification[]
+  guides            Guide[]
+  adminRole         AdminRole?
+
+  @@map("users")
+}
+
+model AdminRole {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  role        String   @default("EDITOR")
+  permissions String?
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_roles")
+}
+
+// ==========================================
+// AGENTS MODULE
+// ==========================================
+
+model Agent {
+  id                String          @id @default(uuid())
+  name              String
+  description       String
+  storeLinks        String
+  bonusInfo         String?
+  proofScreenshots  String?
+  categories        String
+  reputationScore   Float           @default(0)
+  isVerified        Boolean         @default(false)
+  isPremium         Boolean         @default(false)
+  isTrusted         Boolean         @default(false)
+  affiliateCode     String          @unique
+  affiliateLink     String
+  agentType         String
+  contactInfo       String?
+  shippingMethods   String
+  paymentMethods    String
+  averageProcessingTime Int?
+  logo              String?
+  banner            String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  products          Product[]
+  orders            Order[]
+  affiliateClicks   AffiliateClick[]
+  affiliateConversions AffiliateConversion[]
+
+  @@map("agents")
+}
+
+// ==========================================
+// PRODUCTS MODULE
+// ==========================================
+
+model Product {
+  id              String   @id @default(uuid())
+  title           String
+  description     String
+  agentId         String
+  category        String
+  subcategory     String?
+  images          String
+  price           Float
+  currency        String   @default("USD")
+  qualityRating   Float?   @default(0)
+  tags            String
+  affiliateLink   String
+  marketplaceLink String
+  marketplace     String
+  isFeatured      Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  viewCount       Int      @default(0)
+  clickCount      Int      @default(0)
+  specifications  String?
+  colors          String
+  sizes           String
+  brand           String?
+  weight          Float?
+  dimensions      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  agent           Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  affiliateClicks AffiliateClick[]
+  affiliateConversions AffiliateConversion[]
+
+  @@map("products")
+}
+
+// ==========================================
+// ORDERS MODULE
+// ==========================================
+
+model Order {
+  id              String      @id @default(uuid())
+  userId          String
+  agentId         String
+  link            String
+  marketplace     String
+  status          String      @default("CREATED")
+  orderDate       DateTime    @default(now())
+  paidDate        DateTime?
+  shippedDate     DateTime?
+  receivedDate    DateTime?
+  trackingNumber  String?
+  estimatedDelivery DateTime?
+  notes           String?
+  totalAmount     Float?
+  currency        String      @default("USD")
+  items           String?
+  shippingAddress String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent           Agent       @relation(fields: [agentId], references: [id])
+
+  @@map("orders")
+}
+
+// ==========================================
+// LINK VALIDATION MODULE
+// ==========================================
+
+model LinkValidation {
+  id            String      @id @default(uuid())
+  userId        String?
+  link          String
+  marketplace   String
+  agent         String?
+  riskLevel     String
+  price         Float?
+  currency      String?     @default("USD")
+  anomalies     String?
+  riskFactors   String?
+  recommendations String?
+  validatedAt   DateTime    @default(now())
+  ipAddress     String?
+  userAgent     String?
+
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("link_validations")
+}
+
+// ==========================================
+// GUIDES MODULE
+// ==========================================
+
+model Guide {
+  id          String       @id @default(uuid())
+  title       String
+  slug        String       @unique
+  content     String
+  excerpt     String?
+  category    String
+  tags        String
+  authorId    String
+  coverImage  String?
+  isPublished Boolean      @default(false)
+  viewCount   Int          @default(0)
+  estimatedReadTime Int?
+  difficulty  String?      @default("BEGINNER")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  publishedAt DateTime?
+
+  author      User         @relation(fields: [authorId], references: [id])
+
+  @@map("guides")
+}
+
+// ==========================================
+// AFFILIATE SYSTEM
+// ==========================================
+
+model AffiliateClick {
+  id          String    @id @default(uuid())
+  userId      String?
+  agentId     String
+  productId   String?
+  ipAddress   String
+  userAgent   String?
+  referrer    String?
+  country     String?
+  device      String?
+  os          String?
+  browser     String?
+  clickedAt   DateTime  @default(now())
+
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  agent       Agent     @relation(fields: [agentId], references: [id])
+  product     Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  conversion  AffiliateConversion?
+
+  @@map("affiliate_clicks")
+}
+
+model AffiliateConversion {
+  id                String    @id @default(uuid())
+  clickId           String    @unique
+  userId            String?
+  agentId           String
+  productId         String?
+  conversionValue   Float
+  commissionAmount  Float
+  commissionRate    Float
+  currency          String    @default("USD")
+  status            String    @default("PENDING")
+  convertedAt       DateTime  @default(now())
+  approvedAt        DateTime?
+  paidAt            DateTime?
+
+  click       AffiliateClick @relation(fields: [clickId], references: [id])
+  agent       Agent          @relation(fields: [agentId], references: [id])
+  product     Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("affiliate_conversions")
+}
+
+// ==========================================
+// NOTIFICATIONS MODULE
+// ==========================================
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  data      String?
+  isRead    Boolean          @default(false)
+  imageUrl  String?
+  actionUrl String?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ==========================================
+// SUPPORT MODULE
+// ==========================================
+
+model FAQ {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String
+  category  String
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  viewCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("faqs")
+}
+
+model ContactSubmission {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    String   @default("PENDING")
+  response  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contact_submissions")
+}
+
+model PageView {
+  id        String   @id @default(uuid())
+  userId    String?
+  page      String
+  referrer  String?
+  userAgent String?
+  ipAddress String?
+  country   String?
+  device    String?
+  createdAt DateTime @default(now())
+
+  @@map("page_views")
+}
+
+model SearchQuery {
+  id         String   @id @default(uuid())
+  userId     String?
+  query      String
+  category   String?
+  resultsCount Int     @default(0)
+  clickedResult String?
+  createdAt  DateTime @default(now())
+
+  @@map("search_queries")
+}
+
+model AppConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("app_config")
+}
+
+model Banner {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  imageUrl    String
+  linkUrl     String?
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("banners")
+}
