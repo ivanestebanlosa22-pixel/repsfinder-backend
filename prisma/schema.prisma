@@ -1,50 +1,15 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // Asegúrate de que el URL esté en tu archivo .env
+  url      = env("DATABASE_URL")
 }
 
-model Store {
-  id              Int              @id @default(autoincrement())
-  name            String
-  alias           String?          // Alias opcional
-  platform        String           // Weidian, Taobao, etc.
-  url             String
-  category        Category         @relation(fields: [categoryId], references: [id])
-  categoryId      Int
-  priceTier       PriceTier        // Rango de precios: Low, Medium, High
-  activityStatus  ActivityStatus   // Estado: activo, inactivo
-  reputationScore Float            // Puntaje basado en señales de reputación
-  lastCheckedAt   DateTime         @default(now())  // Fecha de la última revisión
-  signals         ReputationSignal[]
-
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-}
-
-model ReputationSignal {
-  id              Int      @id @default(autoincrement())
-  storeId         Int
-  sourceType      String   // Reddit, QC, Forum, etc.
-  sourceUrl       String
-  sourceDate      DateTime @default(now())
-  signalKind      String   // Positiva, negativa, mixta, etc.
-  evidence        String?  // Descripción o evidencia (por ejemplo, "foto QC")
-  store           Store    @relation(fields: [storeId], references: [id])
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model Category {
-  id    Int     @id @default(autoincrement())
-  name  String
-  stores Store[]
-}
+////////////////////
+// ENUMS
+////////////////////
 
 enum PriceTier {
   LOW
@@ -56,4 +21,53 @@ enum ActivityStatus {
   ACTIVE
   INACTIVE
   UNKNOWN
+}
+
+////////////////////
+// MODELS
+////////////////////
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  stores Store[]
+}
+
+model Store {
+  id              Int              @id @default(autoincrement())
+  name            String
+  alias           String?
+  platform        String
+  url             String
+  categoryId      Int
+  category        Category         @relation(fields: [categoryId], references: [id])
+  priceTier       PriceTier
+  activityStatus  ActivityStatus
+  reputationScore Float
+  lastCheckedAt   DateTime         @default(now())
+  signals         ReputationSignal[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ReputationSignal {
+  id         Int      @id @default(autoincrement())
+  storeId    Int
+  store      Store    @relation(fields: [storeId], references: [id])
+  sourceType String
+  sourceUrl  String
+  sourceDate DateTime @default(now())
+  signalKind String
+  evidence   String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
