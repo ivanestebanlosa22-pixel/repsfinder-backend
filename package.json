@@ -1,11 +1,12 @@
 {
   "name": "repsfinder-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "type": "commonjs",
   "scripts": {
-    "start": "node index.js",
-    "prisma:migrate": "prisma migrate deploy",
+    "start": "npm run prisma:generate && node src/index.js",
     "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
     "prisma:seed": "prisma db seed"
   },
   "prisma": {
